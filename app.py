@@ -62,6 +62,4 @@ def predict(model,wav_filepath):
     return emotions[np.argmax(predictions[0])+1]
 if __name__ == "__main__":
     main()
-© 2022 GitHub, Inc.
-Terms
-Privacy
+
