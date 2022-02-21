@@ -21,7 +21,7 @@ def main():
 
 @st.cache(show_spinner=False)
 def get_file_content_as_string(path):
-    url = 'https://github.com/bhanu7700/emotion_detection_/app.py' + path
+    url = 'https://github.com/bhanu7700/emotion_detection_/blob/master/app.py' + path
     response = urllib.request.urlopen(url)
     return response.read().decode("utf-8")
     
