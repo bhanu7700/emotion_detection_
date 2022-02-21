@@ -1,38 +1,67 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
 import streamlit as st
-
-"""
-# Welcome to Streamlit!
-
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
-
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
-
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+import numpy as np    
+import tensorflow as tf
+import os,urllib
+import librosa # to extract speech features
 
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+def main():
+    #print(cv2.__version__)
+    selected_box = st.sidebar.selectbox(
+        'Choose an option..',
+        ('Emotion Recognition','view source code')
+        )
+            
+    if selected_box == 'Emotion Recognition':        
+        st.sidebar.success('To try by yourself by adding a audio file .')
+        application()
+    if selected_box=='view source code':
+        st.code(get_file_content_as_string("app.py"))
 
-    points_per_turn = total_points / num_turns
+@st.cache(show_spinner=False)
+def get_file_content_as_string(path):
+    url = 'https://raw.githubusercontent.com/bhanu7700/emotion_detection_/main/' + path
+    response = urllib.request.urlopen(url)
+    return response.read().decode("utf-8")
+    
+@st.cache(show_spinner=False)
+def load_model():
+    model=tf.keras.models.load_model('mymodel.h5')
+    
+    return model
+def application():
+    models_load_state=st.text('\n Loading models..')
+    model=load_model()
+    models_load_state.text('\n Models Loading..complete')
+    
+    
+    file_to_be_uploaded = st.file_uploader("Choose an audio...", type="wav")
+    
+    if file_to_be_uploaded:
+        st.audio(file_to_be_uploaded, format='audio/wav')
+        st.success('Emotion of the audio is  '+predict(model,file_to_be_uploaded))
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
-
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+def extract_mfcc(wav_file_name):
+    #This function extracts mfcc features and obtain the mean of each dimension
+    #Input : path_to_wav_file
+    #Output: mfcc_features'''
+    y, sr = librosa.load(wav_file_name)
+    mfccs = np.mean(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40).T,axis=0)
+    
+    return mfccs
+    
+    
+def predict(model,wav_filepath):
+    emotions={1 : 'neutral', 2 : 'calm', 3 : 'happy', 4 : 'sad', 5 : 'angry', 6 : 'fearful', 7 : 'disgust', 8 : 'surprised'}
+    test_point=extract_mfcc(wav_filepath)
+    test_point=np.reshape(test_point,newshape=(1,40,1))
+    predictions=model.predict(test_point)
+    print(emotions[np.argmax(predictions[0])+1])
+    
+    return emotions[np.argmax(predictions[0])+1]
+if __name__ == "__main__":
+    main()
+© 2022 GitHub, Inc.
+Terms
+Privacy
